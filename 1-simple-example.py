@@ -8,9 +8,9 @@ from simpy.util import start_delayed
 
 
 def simple_process(env, name, waitfor=50):
-    print('{:4d}:{} - begin process'.format(env.now, name))
+    print('{:6.2f}:{} - begin process'.format(env.now, name))
     yield env.timeout(waitfor)
-    print('{:4d}:{} - end process'.format(env.now, name))
+    print('{:6.2f}:{} - end process'.format(env.now, name))
 
 env = simpy.Environment()
 proc = env.process(simple_process(env, 'P0'))
