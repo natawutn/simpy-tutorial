@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 #
-# Simpy Example - Complex Queueing Network
+# Simpy Example - Using yield from to organize code
 # for 2110636 Performance Evaluation and Analysis Class
 # Natawut Nupairoj, Chulalongkorn University, Thailand
 import simpy
 import random
 
-# Generic helper class to hold information regarding to resource
-# This simplifies how we pass information from main program to entity process
+
+# Helper class to
 class Server(object):
     def __init__(self, env, name, capacity, service_rate):
         self.name = name
@@ -22,6 +22,17 @@ class Server(object):
     def get_service_time(self):
         return random.expovariate(self.service_rate)
 
+    def use(self):
+        t_arrival = env.now
+        with self.resource.request() as request:
+            yield request
+            t_enter = env.now
+            t_queue = t_enter - t_arrival
+            service_time = self.get_service_time()
+            yield env.timeout(service_time)
+            t_service = env.now - t_enter
+        return t_queue, t_service
+
 
 # passenger - Entity Process
 # Describe how passenger performs at the station
@@ -35,40 +46,23 @@ def passenger(env, name, ticket_machine, ticket_office, gate):
     # we randomly choose the destination
     if random.random() < 0.8:
         # this is the 80% that go to ticket machine
-        t_arrival = env.now
-        print('[{:6.2f}:{}] - join queue at ticket machine'.format(t_arrival, name))
+        print('[{:6.2f}:{}] - arrive at ticket machine'.format(env.now, name))
         ticket_machine.print_stats()
-        with ticket_machine.resource.request() as request:
-            yield request
-            t_queue = env.now - t_arrival
-            print('[{:6.2f}:{}] - reach machine after waiting for {:4.2f} time units'.format(env.now, name, t_queue))
-            service_time = ticket_machine.get_service_time()
-            yield env.timeout(service_time)
-            print('[{:6.2f}:{}] - finish buying ticket after {:4.2f} time units'.format(env.now, name, service_time))
+        # must use yield from to delegate yield to other functions
+        tq, ts = yield from ticket_machine.use()
+        print('[{:6.2f}:{}] - finish buying ticket with q = {:4.2f} and s = {:4.2f} time units'.format(env.now, name, tq, ts))
     else:
         # this is the 20% that go to ticket office
-        t_arrival = env.now
-        print('[{:6.2f}:{}] - join queue at ticket office'.format(t_arrival, name))
+        print('[{:6.2f}:{}] - arrive at ticket office'.format(env.now, name))
         ticket_office.print_stats()
-        with ticket_office.resource.request() as request:
-            yield request
-            t_queue = env.now - t_arrival
-            print('[{:6.2f}:{}] - reach counter after waiting for {:4.2f} time units'.format(env.now, name, t_queue))
-            service_time = ticket_office.get_service_time()
-            yield env.timeout(service_time)
-            print('[{:6.2f}:{}] - finish buying ticket after {:4.2f} time units'.format(env.now, name, service_time))
+        tq, ts = yield from ticket_office.use()
+        print('[{:6.2f}:{}] - finish buying ticket with q = {:4.2f} and s = {:4.2f} time units'.format(env.now, name, tq, ts))
 
     # those finish buying tickets from either machine or office go to the gate
-    t_arrival = env.now
-    print('[{:6.2f}:{}] - join queue at the gates'.format(t_arrival, name))
+    print('[{:6.2f}:{}] - arrive at the gates'.format(env.now, name))
     gate.print_stats()
-    with gate.resource.request() as request:
-        yield request
-        t_queue = env.now - t_arrival
-        print('[{:6.2f}:{}] - reach the gate after waiting for {:4.2f} time units'.format(env.now, name, t_queue))
-        service_time = gate.get_service_time()
-        yield env.timeout(service_time)
-        print('[{:6.2f}:{}] - pass the gate after {:4.2f} time units'.format(env.now, name, service_time))
+    tq, ts = yield from gate.use()
+    print('[{:6.2f}:{}] - passing the gate with q = {:4.2f} and s = {:4.2f} time units'.format(env.now, name, tq, ts))
 
     print('[{:6.2f}:{}] - depart from station'.format(env.now, name))
 

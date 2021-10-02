@@ -7,6 +7,8 @@ import simpy
 import random
 
 
+# Generic helper class to hold information regarding to resource
+# This simplifies how we pass information from main program to entity process
 class Server(object):
     def __init__(self, env, name, capacity, service_rate):
         self.name = name
