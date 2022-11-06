@@ -42,7 +42,7 @@ def passenger_generator(env, server, arrival_rate, service_rate):
 
 
 # for simplicity, we define arrival and service rate as mean inter-arrival time and mean service time
-MEAN_INTER_ARRIVAL_TIME = 5     # 5 time units between arrivals
+MEAN_INTER_ARRIVAL_TIME = 2     # 5 time units between arrivals
 MEAN_SERVICE_TIME = 4           # 4 time units for each service
 SIMULATION_END_TIME = 50
 
